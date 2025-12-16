@@ -1,2 +1,2 @@
-# stock-liquidity-regression
-Statistical modeling of stock market liquidity examining trading activity and firm characteristics using regression analysis and model diagnostics.
+# Predicting Stock liquidity
+Predicting stock market liquidity using multiple regression analysis, model diagnostics, and residual evaluation based on trading activity and firm characteristics.
