@@ -1,0 +1,205 @@
+---
+title: "Stat 645 Project work"
+author: "Benle Cornelius"
+date: "2025-11-21"
+output: html_document
+---
+
+```{r setup}
+knitr::opts_knit$set(root.dir = "C:/Users/benle/Desktop/My files/Course materials/Stat 645/Project work")
+getwd()
+```
+
+```{r cars}
+#Loading and inspecting the data
+Data<-read.csv("Liquidity.csv", header = TRUE, sep = ",")
+head(Data)
+dim(Data)
+summary(Data)
+```
+
+
+```{r pressure, echo=FALSE}
+par(mfrow = c(2, 3))
+
+# Create histograms for each variable to identify their distribution and skewness
+hist(Data$AVGT, main = "Distribution of AVGT", xlab = "AVGT", col = "lightblue")
+hist(Data$VOLUME, main = "Distribution of VOLUME", xlab = "VOLUME", col = "lightgreen")
+hist(Data$NTRAN, main = "Distribution of NTRAN", xlab = "NTRAN", col = "lightcoral")
+hist(Data$PRICE, main = "Distribution of PRICE", xlab = "PRICE", col = "lightyellow")
+hist(Data$VALUE, main = "Distribution of VALUE", xlab = "VALUE", col = "lightpink")
+hist(Data$DEBEQ, main = "Distribution of DEBEQ", xlab = "DEBEQ", col = "lightgray")
+
+# Analysis of Histograms
+cat("Distribution Patterns:\n")
+cat("- AVGT: Right-skewed - Most stocks have low average time between trades, few have very high waiting times\n")
+cat("- VOLUME: Right-skewed - Most stocks have moderate trading volume, few are extremely heavily traded\n")
+cat("- NTRAN: Right-skewed - Most stocks have moderate number of transactions, few have very high transaction counts\n")
+cat("- PRICE: Right-skewed - Most stocks have moderate prices, few have very high stock prices\n")
+cat("- VALUE: Strongly right-skewed - Most companies have moderate market caps, few are extremely large companies\n")
+cat("- DEBEQ: Right-skewed - Most companies have moderate debt levels, few have very high debt-to-equity ratios\n\n")
+
+
+cat(" Outliers in the right tails may disproportionately influence model results\n")
+cat(" Need to check scatterplots to see relationships between these skewed variables\n")
+
+
+```
+
+```{r}
+par(mfrow = c(2, 3))
+
+# Creating  scatter plots for AVGT against each predictors see the relationship between each predictor and AVGT
+plot(Data$VOLUME, Data$AVGT, main = "AVGT vs VOLUME", xlab = "VOLUME", ylab = "AVGT", pch = 19, col = "blue")
+plot(Data$NTRAN, Data$AVGT, main = "AVGT vs NTRAN", xlab = "NTRAN", ylab = "AVGT", pch = 19, col = "red")
+plot(Data$PRICE, Data$AVGT, main = "AVGT vs PRICE", xlab = "PRICE", ylab = "AVGT", pch = 19, col = "darkgreen")
+plot(Data$VALUE, Data$AVGT, main = "AVGT vs VALUE", xlab = "VALUE", ylab = "AVGT", pch = 19, col = "purple")
+plot(Data$DEBEQ, Data$AVGT, main = "AVGT vs DEBEQ", xlab = "DEBEQ", ylab = "AVGT", pch = 19, col = "orange")
+
+# Analysis of Scatter Plots
+cat("=== SCATTER PLOT ANALYSIS ===\n")
+cat("The scatter plots reveal clear patterns that align with financial intuition. Stocks with higher trading volume and a greater number of transactions consistently show lower average time between trades, indicating stronger liquidity. Similarly, larger companies by market capitalization also tend to be more liquid. However, the relationships are not perfectly straight lines, showing curved patterns that suggest the underlying connections might be more complex. .\n")
+```
+
+```{r}
+# Creating new variables with log transformation
+# Adding a small constant (+1) to avoid log(0) which is undefined
+Data$log_AVGT <- log(Data$AVGT )
+Data$log_VOLUME <- log(Data$VOLUME )
+Data$log_NTRAN <- log(Data$NTRAN )
+Data$log_VALUE <- log(Data$VALUE )
+
+# We'll keep PRICE and DEBEQ as they are for now, since their patterns were less clear
+# Now let's create histograms of the TRANSFORMED variables to see if they're more normal
+par(mfrow = c(2, 2))
+hist(Data$log_AVGT, main = "Distribution of log(AVGT)", xlab = "log(AVGT)", col = "lightblue")
+hist(Data$log_VOLUME, main = "Distribution of log(VOLUME)", xlab = "log(VOLUME)", col = "lightgreen")
+hist(Data$log_NTRAN, main = "Distribution of log(NTRAN)", xlab = "log(NTRAN)", col = "lightcoral")
+hist(Data$log_VALUE, main = "Distribution of log(VALUE)", xlab = "log(VALUE)", col = "lightpink")
+  
+```
+
+```{r}
+
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 2))
+
+# Create scatter plots with transformed variables
+plot(Data$log_VOLUME, Data$log_AVGT, main = "log(AVGT) vs log(VOLUME)", 
+     xlab = "log(VOLUME)", ylab = "log(AVGT)", pch = 19, col = "blue", cex.lab = 1.1)
+
+plot(Data$log_NTRAN, Data$log_AVGT, main = "log(AVGT) vs log(NTRAN)", 
+     xlab = "log(NTRAN)", ylab = "log(AVGT)", pch = 19, col = "red", cex.lab = 1.1)
+
+plot(Data$log_VALUE, Data$log_AVGT, main = "log(AVGT) vs log(VALUE)", 
+     xlab = "log(VALUE)", ylab = "log(AVGT)", pch = 19, col = "purple", cex.lab = 1.1)
+
+plot(Data$PRICE, Data$log_AVGT, main = "log(AVGT) vs PRICE", 
+     xlab = "PRICE", ylab = "log(AVGT)", pch = 19, col = "darkgreen", cex.lab = 1.1)
+
+cat("=== ANALYSIS OF TRANSFORMED SCATTER PLOTS ===\n")
+cat("The log transformations have successfully straightened the previously curved relationships, revealing much clearer linear patterns. We can now see strong negative relationships between liquidity and our key predictors: as trading volume, number of transactions, and company size increase, the average time between trades decreases substantially. These transformed variables will work much better in our linear regression model, as the relationships now follow the straight-line patterns that linear regression is designed to capture.\n")
+```
+
+```{r}
+library(car)
+
+
+vif(model)
+
+```
+
+
+
+##MAIN MODEL
+```{r}
+Data$log_AVGT  <- log(Data$AVGT)
+
+
+# Building the regression model
+model_raw7 <- lm(log_AVGT ~ VOLUME + NTRAN + PRICE + VALUE + DEBEQ, data = Data)
+
+# Summary model
+summary(model_raw7)
+
+vif(model_raw7)
+
+plot(model_raw7)
+
+#computing RMSE
+# RMSE function
+rmse <- function(actual, predicted){
+  sqrt(mean((actual - predicted)^2))
+}
+
+# Predicted log values
+pred_log <- predict(model_raw7)
+
+# Convert back to original scale
+pred_avgt <- exp(pred_log)
+
+# Compute RMSE on AVGT scale
+rmse_model1 <- rmse(Data$AVGT, pred_avgt)
+
+rmse_model1
+
+
+
+```
+
+##VARIABLE SELECTION
+```{r}
+# Backward Selection
+model_backward <- step(model_raw7, direction = "backward", trace = 1)
+cat("\nFinal backward model:\n")
+summary(model_backward)
+
+# Forward Selection  
+cat("\n\n=== FORWARD SELECTION ===\n")
+null_model <- lm(log_AVGT ~ 1, data = Data)
+model_forward <- step(null_model, 
+                      scope = list(lower = null_model, upper = model_raw7),
+                      direction = "forward", 
+                      trace = 1)
+cat("\nFinal forward model:\n")
+summary(model_forward)
+
+# Compare results
+cat("\n\n=== COMPARISON ===\n")
+cat("Backward model formula:", paste(formula(model_backward)), "\n")
+cat("Forward model formula: ", paste(formula(model_forward)), "\n")
+cat("\nAIC - Backward:", AIC(model_backward), " Forward:", AIC(model_forward))
+cat("\nR² - Backward:", summary(model_backward)$r.squared, 
+    " Forward:", summary(model_forward)$r.squared)
+
+
+
+
+vif(model_forward)
+bptest(model_forward)
+
+plot(model_forward)
+hist(model_forward$residuals)
+shapiro.test(model_forward$residuals)
+```
+
+```{r}
+summary(model_backward)
+vif(model_backward)
+plot(model_backward)
+hist(model_backward$residuals)
+shapiro.test(model_backward$residuals)
+
+```
+
+
+```{r}
+summary(model_forward)
+vif(model_forward)
+plot((model_forward))
+```
+
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
